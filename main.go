@@ -20,6 +20,7 @@ func main() {
 		},
 	}
 
+	gen.GeneratePayloadFieldIndices(j, p)
 	gen.GeneratePayloadStruct(j, p)
 
 	if err := j.Save("./payloads/product_gen.go"); err != nil {
