@@ -16,6 +16,7 @@ func GenerateImports(f *jen.File) {
 func GeneratePayloadStruct(f *jen.File, p *code.Payload) {
 	f.Type().Id(p.Name).StructFunc(func(g *jen.Group) {
 		g.Id("Mask").Index().Bool()
+
 		for _, field := range p.Fields {
 			addTypeDefinition(g.Id(field.StructName), field.Type, field.Nullable)
 		}
@@ -30,6 +31,7 @@ func GeneratePayloadFieldIndices(f *jen.File, p *code.Payload) {
 			} else {
 				g.Id(getFieldRefName(p, field))
 			}
+
 			if i == len(p.Fields)-1 {
 				g.Id(p.Name + "FieldCount")
 			}
@@ -63,16 +65,17 @@ func GeneratePayloadFieldMask(f *jen.File, p *code.Payload) {
 func GeneratePayloadJsonWriter(f *jen.File, p *code.Payload) {
 	f.Func().
 		Params(jen.Id("x").Op("*").Id(p.Name)).
-		Id("writeJson").
+		Id("WriteJson").
 		Params(
 			jen.Id("writer").Op("*").Qual(jsonwPath, "ObjectWriter"),
 			jen.Id("mask").Index().Bool(),
 		).
 		BlockFunc(func(g *jen.Group) {
+			g.Id("noMask").Op(":=").Len(jen.Id("x").Dot("Mask")).Op("!=").Id(p.Name + "FieldCount")
 			g.Id("writer").Dot("Open").Call()
 			for _, field := range p.Fields {
 				g.If(
-					jen.Id("mask").Index(jen.Id(getFieldRefName(p, field))),
+					jen.Id("noMask").Op("||").Id("mask").Index(jen.Id(getFieldRefName(p, field))),
 				).BlockFunc(func(g *jen.Group) {
 					if field.Nullable {
 						g.If(
@@ -101,7 +104,7 @@ func GeneratePayloadMarshaler(f *jen.File, p *code.Payload) {
 		Params(jen.Index().Byte(), jen.Error()).
 		BlockFunc(func(g *jen.Group) {
 			g.Id("writer").Op(":=").Qual(jsonwPath, "NewObjectWriter").Call(jen.Nil())
-			g.Id("x").Dot("writeJson").Call(jen.Id("writer"), jen.Id("x").Dot("Mask"))
+			g.Id("x").Dot("WriteJson").Call(jen.Id("writer"), jen.Id("x").Dot("Mask"))
 			g.Return(jen.Id("writer").Dot("BuildBytes").Call())
 		})
 }

@@ -22,30 +22,30 @@ func addTypeDefinition(s *jen.Statement, t code.SchemaType, nullable bool) {
 		panic("Not yet implemented")
 	case code.SchemaTypeString:
 		if nullable {
-			s.Qual(moPath, "Option").Index(jen.String())
+			s.Qual(moPath, "Option").Types(jen.String())
 		} else {
 			s.String()
 		}
 	case code.SchemaTypeNumber:
 		if nullable {
-			s.Qual(moPath, "Option").Index(jen.Float64())
+			s.Qual(moPath, "Option").Types(jen.Float64())
 		} else {
 			s = s.Float64()
 		}
 	case code.SchemaTypeInteger:
 		if nullable {
-			s.Qual(moPath, "Option").Index(jen.Int64())
+			s.Qual(moPath, "Option").Types(jen.Int64())
 		} else {
 			s = s.Int64()
 		}
 	case code.SchemaTypeBoolean:
 		if nullable {
-			s.Qual(moPath, "Option").Index(jen.Bool())
+			s.Qual(moPath, "Option").Types(jen.Bool())
 		} else {
 			s = s.Bool()
 		}
 	default:
-		panic("Unknown type")
+		panic("Unknown schema type")
 	}
 }
 
@@ -65,7 +65,7 @@ func mapSchemaType(t code.SchemaType) string {
 	case code.SchemaTypeBoolean:
 		method = "BooleanField"
 	default:
-		panic("Unknown type")
+		panic("Unknown schema type")
 	}
 	return method
 }

@@ -46,38 +46,39 @@ type Product struct {
 	Published   bool
 }
 
-func (x *Product) writeJson(writer *jsonw.ObjectWriter, mask []bool) {
+func (x *Product) WriteJson(writer *jsonw.ObjectWriter, mask []bool) {
+	noMask := len(x.Mask) != ProductFieldCount
 	writer.Open()
-	if mask[ProductIdRef] {
+	if noMask || mask[ProductIdRef] {
 		writer.StringField("id", x.Id)
 	}
-	if mask[ProductTitleRef] {
+	if noMask || mask[ProductTitleRef] {
 		writer.StringField("title", x.Title)
 	}
-	if mask[ProductDescriptionRef] {
+	if noMask || mask[ProductDescriptionRef] {
 		if value, exists := x.Description.Get(); exists {
 			writer.StringField("description", value)
 		} else {
 			writer.NullField("description")
 		}
 	}
-	if mask[ProductPriceRef] {
+	if noMask || mask[ProductPriceRef] {
 		writer.FloatField("price", x.Price)
 	}
-	if mask[ProductWeightRef] {
+	if noMask || mask[ProductWeightRef] {
 		if value, exists := x.Weight.Get(); exists {
 			writer.IntegerField("weight", value)
 		} else {
 			writer.NullField("weight")
 		}
 	}
-	if mask[ProductPublishedRef] {
+	if noMask || mask[ProductPublishedRef] {
 		writer.BooleanField("published", x.Published)
 	}
 	writer.Close()
 }
 func (x *Product) MarshalJSON() ([]byte, error) {
 	writer := jsonw.NewObjectWriter(nil)
-	x.writeJson(writer, x.Mask)
+	x.WriteJson(writer, x.Mask)
 	return writer.BuildBytes()
 }
