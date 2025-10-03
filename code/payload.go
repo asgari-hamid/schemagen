@@ -1,8 +1,23 @@
 package code
 
+type SchemaType int
+
+const (
+	SchemaTypeObject SchemaType = iota
+	SchemaTypeArray
+	SchemaTypeString
+	SchemaTypeNumber
+	SchemaTypeInteger
+	SchemaTypeBoolean
+)
+
 type PayloadField struct {
-	Name string
-	Type string
+	StructName string
+	JsonName   string
+
+	Type     SchemaType
+	Nullable bool
+
 	Tags map[string]string
 }
 

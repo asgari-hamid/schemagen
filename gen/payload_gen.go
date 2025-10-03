@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"schemagen/code"
+	"github.com/asgari-hamid/schemagen/code"
 
 	"github.com/dave/jennifer/jen"
 )
@@ -9,7 +9,23 @@ import (
 func GeneratePayloadStruct(f *jen.File, p *code.Payload) {
 	f.Type().Id(p.Name).StructFunc(func(g *jen.Group) {
 		for _, field := range p.Fields {
-			g.Id(field.Name).Id(field.Type).Tag(field.Tags)
+			s := g.Id(field.StructName)
+			switch field.Type {
+			case code.SchemaTypeObject:
+				panic("Not yet implemented")
+			case code.SchemaTypeArray:
+				panic("Not yet implemented")
+			case code.SchemaTypeString:
+				s = s.String()
+			case code.SchemaTypeNumber:
+				s = s.Float64()
+			case code.SchemaTypeInteger:
+				s = s.Int64()
+			case code.SchemaTypeBoolean:
+				s = s.Bool()
+			default:
+				panic("Unknown type")
+			}
 		}
 	})
 }
@@ -18,9 +34,9 @@ func GeneratePayloadFieldIndices(f *jen.File, p *code.Payload) {
 	f.Const().DefsFunc(func(g *jen.Group) {
 		for i, field := range p.Fields {
 			if i == 0 {
-				g.Id(p.Name + field.Name + "Ref").Int().Op("=").Iota()
+				g.Id(p.Name + field.StructName + "Ref").Int().Op("=").Iota()
 			} else {
-				g.Id(p.Name + field.Name + "Ref")
+				g.Id(p.Name + field.StructName + "Ref")
 			}
 			if i == len(p.Fields)-1 {
 				g.Id(p.Name + "FieldCount")
@@ -42,12 +58,48 @@ func GeneratePayloadFieldMask(f *jen.File, p *code.Payload) {
 			).BlockFunc(func(g *jen.Group) {
 				g.Switch(jen.Id("field")).BlockFunc(func(g *jen.Group) {
 					for _, field := range p.Fields {
-						g.Case(jen.Lit(field.Name)).
-							Id("mask").Index(jen.Id(p.Name + field.Name + "Ref")).Op("=").True()
+						g.Case(jen.Lit(field.JsonName)).
+							Id("mask").Index(jen.Id(p.Name + field.StructName + "Ref")).Op("=").True()
 					}
 				})
 			})
 
 			g.Return(jen.Id("mask"))
+		})
+}
+
+func GeneratePayloadJsonWriter(f *jen.File, p *code.Payload) {
+	f.Func().
+		Params(jen.Id("x").Op("*").Id(p.Name)).
+		Id("writeJson").
+		Params(
+			jen.Id("writer").Op("*").Qual("github.com/asgari-hamid/jsonw", "ObjectWriter"),
+			jen.Id("mask").Index().Bool(),
+		).
+		BlockFunc(func(g *jen.Group) {
+			for _, field := range p.Fields {
+				g.If(
+					jen.Id("mask").Index(jen.Id(p.Name + field.StructName + "Ref")),
+				).BlockFunc(func(g *jen.Group) {
+					method := ""
+					switch field.Type {
+					case code.SchemaTypeObject:
+						panic("Not yet implemented")
+					case code.SchemaTypeArray:
+						panic("Not yet implemented")
+					case code.SchemaTypeString:
+						method = "StringField"
+					case code.SchemaTypeNumber:
+						method = "FloatField"
+					case code.SchemaTypeInteger:
+						method = "IntegerField"
+					case code.SchemaTypeBoolean:
+						method = "BooleanField"
+					default:
+						panic("Unknown type")
+					}
+					g.Id("writer").Dot(method).Call(jen.Lit(field.JsonName), jen.Id("x").Dot(field.StructName))
+				})
+			}
 		})
 }
