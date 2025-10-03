@@ -18,7 +18,7 @@ func GeneratePayloadStruct(f *jen.File, p *code.Payload) {
 		g.Id("Mask").Index().Bool()
 
 		for _, field := range p.Fields {
-			addTypeDefinition(g.Id(field.StructName), field.Type, field.Nullable)
+			addTypeDefinition(g.Id(field.StructName), field)
 		}
 	})
 }
@@ -79,14 +79,26 @@ func GeneratePayloadJsonWriter(f *jen.File, p *code.Payload) {
 						g.If(
 							jen.List(jen.Id("value"), jen.Id("exists")).Op(":=").Id("x").Dot(field.StructName).Dot("Get").Call().Op(";").Id("exists"),
 						).BlockFunc(func(g *jen.Group) {
-							method := mapSchemaType(field.Type)
-							g.Id("writer").Dot(method).Call(jen.Lit(field.JsonName), jen.Id("value"))
+							if field.Type == code.SchemaTypeObject {
+								method := mapSchemaType(field.Type)
+								g.Id("obj").Op(":=").Id("writer").Dot(method).Call(jen.Lit(field.JsonName))
+								g.Id("value").Dot("WriteJson").Call(jen.Id("obj"))
+							} else {
+								method := mapSchemaType(field.Type)
+								g.Id("writer").Dot(method).Call(jen.Lit(field.JsonName), jen.Id("value"))
+							}
 						}).Else().BlockFunc(func(g *jen.Group) {
 							g.Id("writer").Dot("NullField").Call(jen.Lit(field.JsonName))
 						})
 					} else {
-						method := mapSchemaType(field.Type)
-						g.Id("writer").Dot(method).Call(jen.Lit(field.JsonName), jen.Id("x").Dot(field.StructName))
+						if field.Type == code.SchemaTypeObject {
+							method := mapSchemaType(field.Type)
+							g.Id("obj").Op(":=").Id("writer").Dot(method).Call(jen.Lit(field.JsonName))
+							g.Id("x").Dot(field.TypeName).Dot("WriteJson").Call(jen.Id("obj"))
+						} else {
+							method := mapSchemaType(field.Type)
+							g.Id("writer").Dot(method).Call(jen.Lit(field.JsonName), jen.Id("x").Dot(field.StructName))
+						}
 					}
 				})
 			}

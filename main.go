@@ -12,13 +12,14 @@ import (
 )
 
 func main() {
-	//generatePayload()
+	//generateProductPayload()
+	//generateProductResponsePayload()
 	usePayload()
 }
 
 func usePayload() {
 	fields := []string{"id", "title", "description", "price", "weight", "published"}
-	p := &payloads.Product{
+	p := payloads.Product{
 		Mask:        payloads.BuildProductFieldMask(fields),
 		Id:          "908ryfye89r7y",
 		Title:       "TV",
@@ -27,14 +28,17 @@ func usePayload() {
 		Weight:      mo.None[int64](),
 		Published:   true,
 	}
-	bytes, _ := json.Marshal(p)
+	r := &payloads.ProductResponse{
+		Product: mo.Some(p),
+	}
+	bytes, _ := json.Marshal(r)
 	fmt.Println(string(bytes))
 }
 
-func generatePayload() {
+func generateProductPayload() {
 	j := jen.NewFile("payloads")
 
-	p := &code.Payload{
+	product := &code.Payload{
 		Name: "Product",
 		Fields: []*code.PayloadField{
 			{StructName: "Id", JsonName: "id", Type: code.SchemaTypeString, Tags: nil},
@@ -47,13 +51,35 @@ func generatePayload() {
 	}
 
 	gen.GenerateImports(j)
-	gen.GeneratePayloadFieldIndices(j, p)
-	gen.GeneratePayloadFieldMask(j, p)
-	gen.GeneratePayloadStruct(j, p)
-	gen.GeneratePayloadJsonWriter(j, p)
-	gen.GeneratePayloadMarshaler(j, p)
+	gen.GeneratePayloadFieldIndices(j, product)
+	gen.GeneratePayloadFieldMask(j, product)
+	gen.GeneratePayloadStruct(j, product)
+	gen.GeneratePayloadJsonWriter(j, product)
+	gen.GeneratePayloadMarshaler(j, product)
 
 	if err := j.Save("./payloads/product_gen.go"); err != nil {
+		panic(err)
+	}
+}
+
+func generateProductResponsePayload() {
+	j := jen.NewFile("payloads")
+
+	productResponse := &code.Payload{
+		Name: "ProductResponse",
+		Fields: []*code.PayloadField{
+			{StructName: "Product", JsonName: "product", Type: code.SchemaTypeObject, TypeName: "Product", Nullable: true, Tags: nil},
+		},
+	}
+
+	gen.GenerateImports(j)
+	gen.GeneratePayloadFieldIndices(j, productResponse)
+	gen.GeneratePayloadFieldMask(j, productResponse)
+	gen.GeneratePayloadStruct(j, productResponse)
+	gen.GeneratePayloadJsonWriter(j, productResponse)
+	gen.GeneratePayloadMarshaler(j, productResponse)
+
+	if err := j.Save("./payloads/product_response_gen.go"); err != nil {
 		panic(err)
 	}
 }

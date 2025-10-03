@@ -14,32 +14,36 @@ func getFieldRefName(p *code.Payload, f *code.PayloadField) string {
 	return p.Name + f.StructName + "Ref"
 }
 
-func addTypeDefinition(s *jen.Statement, t code.SchemaType, nullable bool) {
-	switch t {
+func addTypeDefinition(s *jen.Statement, field *code.PayloadField) {
+	switch field.Type {
 	case code.SchemaTypeObject:
-		panic("Not yet implemented")
+		if field.Nullable {
+			s.Qual(moPath, "Option").Types(jen.Id(field.TypeName))
+		} else {
+			s.Id(field.TypeName)
+		}
 	case code.SchemaTypeArray:
 		panic("Not yet implemented")
 	case code.SchemaTypeString:
-		if nullable {
+		if field.Nullable {
 			s.Qual(moPath, "Option").Types(jen.String())
 		} else {
 			s.String()
 		}
 	case code.SchemaTypeNumber:
-		if nullable {
+		if field.Nullable {
 			s.Qual(moPath, "Option").Types(jen.Float64())
 		} else {
 			s = s.Float64()
 		}
 	case code.SchemaTypeInteger:
-		if nullable {
+		if field.Nullable {
 			s.Qual(moPath, "Option").Types(jen.Int64())
 		} else {
 			s = s.Int64()
 		}
 	case code.SchemaTypeBoolean:
-		if nullable {
+		if field.Nullable {
 			s.Qual(moPath, "Option").Types(jen.Bool())
 		} else {
 			s = s.Bool()
@@ -53,7 +57,7 @@ func mapSchemaType(t code.SchemaType) string {
 	method := ""
 	switch t {
 	case code.SchemaTypeObject:
-		panic("Not yet implemented")
+		method = "ObjectField"
 	case code.SchemaTypeArray:
 		panic("Not yet implemented")
 	case code.SchemaTypeString:

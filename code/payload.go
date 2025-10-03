@@ -16,6 +16,7 @@ type PayloadField struct {
 	JsonName   string
 
 	Type     SchemaType
+	TypeName string
 	Nullable bool
 
 	Tags map[string]string
