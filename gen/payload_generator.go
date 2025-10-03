@@ -78,6 +78,7 @@ func GeneratePayloadJsonWriter(f *jen.File, p *code.Payload) {
 			jen.Id("mask").Index().Bool(),
 		).
 		BlockFunc(func(g *jen.Group) {
+			g.Id("writer").Dot("Open").Call()
 			for _, field := range p.Fields {
 				g.If(
 					jen.Id("mask").Index(jen.Id(p.Name + field.StructName + "Ref")),
@@ -102,6 +103,7 @@ func GeneratePayloadJsonWriter(f *jen.File, p *code.Payload) {
 					g.Id("writer").Dot(method).Call(jen.Lit(field.JsonName), jen.Id("x").Dot(field.StructName))
 				})
 			}
+			g.Id("writer").Dot("Close").Call()
 		})
 }
 

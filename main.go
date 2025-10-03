@@ -1,13 +1,36 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/asgari-hamid/schemagen/code"
 	"github.com/asgari-hamid/schemagen/gen"
-
+	"github.com/asgari-hamid/schemagen/payloads"
 	"github.com/dave/jennifer/jen"
 )
 
 func main() {
+	//generatePayload()
+	usePayload()
+}
+
+func usePayload() {
+	fields := []string{"id", "title", "price"}
+	p := &payloads.Product{
+		Mask:        payloads.BuildProductFieldMask(fields),
+		Id:          "908ryfye89r7y",
+		Title:       "TV",
+		Description: "A TV",
+		Price:       100,
+		Weight:      21000,
+		Published:   true,
+	}
+	bytes, _ := json.Marshal(p)
+	fmt.Println(string(bytes))
+}
+
+func generatePayload() {
 	j := jen.NewFile("payloads")
 
 	p := &code.Payload{
