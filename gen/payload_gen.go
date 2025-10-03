@@ -28,3 +28,26 @@ func GeneratePayloadFieldIndices(f *jen.File, p *code.Payload) {
 		}
 	})
 }
+
+func GeneratePayloadFieldMask(f *jen.File, p *code.Payload) {
+	f.Func().
+		Id("Build" + p.Name + "FieldMask").
+		Params(jen.Id("fields").Index().String()).
+		Index().Bool().
+		BlockFunc(func(g *jen.Group) {
+			g.Id("mask").Op(":=").Make(jen.Index().Bool(), jen.Id(p.Name+"FieldCount"))
+
+			g.For(
+				jen.List(jen.Id("_"), jen.Id("field")).Op(":=").Range().Id("fields"),
+			).BlockFunc(func(g *jen.Group) {
+				g.Switch(jen.Id("field")).BlockFunc(func(g *jen.Group) {
+					for _, field := range p.Fields {
+						g.Case(jen.Lit(field.Name)).
+							Id("mask").Index(jen.Id(p.Name + field.Name + "Ref")).Op("=").True()
+					}
+				})
+			})
+
+			g.Return(jen.Id("mask"))
+		})
+}
