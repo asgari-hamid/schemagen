@@ -6,27 +6,18 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
+func GenerateImports(f *jen.File) {
+	f.ImportNames(map[string]string{
+		moPath:    "mo",
+		jsonwPath: "jsonw",
+	})
+}
+
 func GeneratePayloadStruct(f *jen.File, p *code.Payload) {
 	f.Type().Id(p.Name).StructFunc(func(g *jen.Group) {
 		g.Id("Mask").Index().Bool()
 		for _, field := range p.Fields {
-			s := g.Id(field.StructName)
-			switch field.Type {
-			case code.SchemaTypeObject:
-				panic("Not yet implemented")
-			case code.SchemaTypeArray:
-				panic("Not yet implemented")
-			case code.SchemaTypeString:
-				s = s.String()
-			case code.SchemaTypeNumber:
-				s = s.Float64()
-			case code.SchemaTypeInteger:
-				s = s.Int64()
-			case code.SchemaTypeBoolean:
-				s = s.Bool()
-			default:
-				panic("Unknown type")
-			}
+			addTypeDefinition(g.Id(field.StructName), field.Type, field.Nullable)
 		}
 	})
 }
@@ -35,9 +26,9 @@ func GeneratePayloadFieldIndices(f *jen.File, p *code.Payload) {
 	f.Const().DefsFunc(func(g *jen.Group) {
 		for i, field := range p.Fields {
 			if i == 0 {
-				g.Id(p.Name + field.StructName + "Ref").Int().Op("=").Iota()
+				g.Id(getFieldRefName(p, field)).Int().Op("=").Iota()
 			} else {
-				g.Id(p.Name + field.StructName + "Ref")
+				g.Id(getFieldRefName(p, field))
 			}
 			if i == len(p.Fields)-1 {
 				g.Id(p.Name + "FieldCount")
@@ -60,7 +51,7 @@ func GeneratePayloadFieldMask(f *jen.File, p *code.Payload) {
 				g.Switch(jen.Id("field")).BlockFunc(func(g *jen.Group) {
 					for _, field := range p.Fields {
 						g.Case(jen.Lit(field.JsonName)).
-							Id("mask").Index(jen.Id(p.Name + field.StructName + "Ref")).Op("=").True()
+							Id("mask").Index(jen.Id(getFieldRefName(p, field))).Op("=").True()
 					}
 				})
 			})
@@ -74,33 +65,28 @@ func GeneratePayloadJsonWriter(f *jen.File, p *code.Payload) {
 		Params(jen.Id("x").Op("*").Id(p.Name)).
 		Id("writeJson").
 		Params(
-			jen.Id("writer").Op("*").Qual("github.com/asgari-hamid/jsonw", "ObjectWriter"),
+			jen.Id("writer").Op("*").Qual(jsonwPath, "ObjectWriter"),
 			jen.Id("mask").Index().Bool(),
 		).
 		BlockFunc(func(g *jen.Group) {
 			g.Id("writer").Dot("Open").Call()
 			for _, field := range p.Fields {
 				g.If(
-					jen.Id("mask").Index(jen.Id(p.Name + field.StructName + "Ref")),
+					jen.Id("mask").Index(jen.Id(getFieldRefName(p, field))),
 				).BlockFunc(func(g *jen.Group) {
-					method := ""
-					switch field.Type {
-					case code.SchemaTypeObject:
-						panic("Not yet implemented")
-					case code.SchemaTypeArray:
-						panic("Not yet implemented")
-					case code.SchemaTypeString:
-						method = "StringField"
-					case code.SchemaTypeNumber:
-						method = "FloatField"
-					case code.SchemaTypeInteger:
-						method = "IntegerField"
-					case code.SchemaTypeBoolean:
-						method = "BooleanField"
-					default:
-						panic("Unknown type")
+					if field.Nullable {
+						g.If(
+							jen.List(jen.Id("value"), jen.Id("exists")).Op(":=").Id("x").Dot(field.StructName).Dot("Get").Call().Op(";").Id("exists"),
+						).BlockFunc(func(g *jen.Group) {
+							method := mapSchemaType(field.Type)
+							g.Id("writer").Dot(method).Call(jen.Lit(field.JsonName), jen.Id("value"))
+						}).Else().BlockFunc(func(g *jen.Group) {
+							g.Id("writer").Dot("NullField").Call(jen.Lit(field.JsonName))
+						})
+					} else {
+						method := mapSchemaType(field.Type)
+						g.Id("writer").Dot(method).Call(jen.Lit(field.JsonName), jen.Id("x").Dot(field.StructName))
 					}
-					g.Id("writer").Dot(method).Call(jen.Lit(field.JsonName), jen.Id("x").Dot(field.StructName))
 				})
 			}
 			g.Id("writer").Dot("Close").Call()
@@ -114,7 +100,7 @@ func GeneratePayloadMarshaler(f *jen.File, p *code.Payload) {
 		Params().
 		Params(jen.Index().Byte(), jen.Error()).
 		BlockFunc(func(g *jen.Group) {
-			g.Id("writer").Op(":=").Qual("github.com/asgari-hamid/jsonw", "NewObjectWriter").Call(jen.Nil())
+			g.Id("writer").Op(":=").Qual(jsonwPath, "NewObjectWriter").Call(jen.Nil())
 			g.Id("x").Dot("writeJson").Call(jen.Id("writer"), jen.Id("x").Dot("Mask"))
 			g.Return(jen.Id("writer").Dot("BuildBytes").Call())
 		})

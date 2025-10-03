@@ -8,6 +8,7 @@ import (
 	"github.com/asgari-hamid/schemagen/gen"
 	"github.com/asgari-hamid/schemagen/payloads"
 	"github.com/dave/jennifer/jen"
+	"github.com/samber/mo"
 )
 
 func main() {
@@ -16,14 +17,14 @@ func main() {
 }
 
 func usePayload() {
-	fields := []string{"id", "title", "price"}
+	fields := []string{"id", "title", "description", "price", "weight", "published"}
 	p := &payloads.Product{
 		Mask:        payloads.BuildProductFieldMask(fields),
 		Id:          "908ryfye89r7y",
 		Title:       "TV",
-		Description: "A TV",
+		Description: mo.Some("A TV"),
 		Price:       100,
-		Weight:      21000,
+		Weight:      mo.None[int64](),
 		Published:   true,
 	}
 	bytes, _ := json.Marshal(p)
@@ -38,13 +39,14 @@ func generatePayload() {
 		Fields: []*code.PayloadField{
 			{StructName: "Id", JsonName: "id", Type: code.SchemaTypeString, Tags: nil},
 			{StructName: "Title", JsonName: "title", Type: code.SchemaTypeString, Tags: nil},
-			{StructName: "Description", JsonName: "description", Type: code.SchemaTypeString, Tags: nil},
+			{StructName: "Description", JsonName: "description", Type: code.SchemaTypeString, Nullable: true, Tags: nil},
 			{StructName: "Price", JsonName: "price", Type: code.SchemaTypeNumber, Tags: nil},
-			{StructName: "Weight", JsonName: "weight", Type: code.SchemaTypeInteger, Tags: nil},
+			{StructName: "Weight", JsonName: "weight", Type: code.SchemaTypeInteger, Nullable: true, Tags: nil},
 			{StructName: "Published", JsonName: "published", Type: code.SchemaTypeBoolean, Tags: nil},
 		},
 	}
 
+	gen.GenerateImports(j)
 	gen.GeneratePayloadFieldIndices(j, p)
 	gen.GeneratePayloadFieldMask(j, p)
 	gen.GeneratePayloadStruct(j, p)
