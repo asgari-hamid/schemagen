@@ -66,12 +66,10 @@ func GeneratePayloadJsonWriter(f *jen.File, p *code.Payload) {
 	f.Func().
 		Params(jen.Id("x").Op("*").Id(p.Name)).
 		Id("WriteJson").
-		Params(
-			jen.Id("writer").Op("*").Qual(jsonwPath, "ObjectWriter"),
-			jen.Id("mask").Index().Bool(),
-		).
+		Params(jen.Id("writer").Op("*").Qual(jsonwPath, "ObjectWriter")).
 		BlockFunc(func(g *jen.Group) {
-			g.Id("noMask").Op(":=").Len(jen.Id("x").Dot("Mask")).Op("!=").Id(p.Name + "FieldCount")
+			g.Id("mask").Op(":=").Id("x").Dot("Mask")
+			g.Id("noMask").Op(":=").Len(jen.Id("mask")).Op("!=").Id(p.Name + "FieldCount")
 			g.Id("writer").Dot("Open").Call()
 			for _, field := range p.Fields {
 				g.If(
@@ -104,7 +102,7 @@ func GeneratePayloadMarshaler(f *jen.File, p *code.Payload) {
 		Params(jen.Index().Byte(), jen.Error()).
 		BlockFunc(func(g *jen.Group) {
 			g.Id("writer").Op(":=").Qual(jsonwPath, "NewObjectWriter").Call(jen.Nil())
-			g.Id("x").Dot("WriteJson").Call(jen.Id("writer"), jen.Id("x").Dot("Mask"))
+			g.Id("x").Dot("WriteJson").Call(jen.Id("writer"))
 			g.Return(jen.Id("writer").Dot("BuildBytes").Call())
 		})
 }

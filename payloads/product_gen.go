@@ -46,8 +46,9 @@ type Product struct {
 	Published   bool
 }
 
-func (x *Product) WriteJson(writer *jsonw.ObjectWriter, mask []bool) {
-	noMask := len(x.Mask) != ProductFieldCount
+func (x *Product) WriteJson(writer *jsonw.ObjectWriter) {
+	mask := x.Mask
+	noMask := len(mask) != ProductFieldCount
 	writer.Open()
 	if noMask || mask[ProductIdRef] {
 		writer.StringField("id", x.Id)
@@ -79,6 +80,6 @@ func (x *Product) WriteJson(writer *jsonw.ObjectWriter, mask []bool) {
 }
 func (x *Product) MarshalJSON() ([]byte, error) {
 	writer := jsonw.NewObjectWriter(nil)
-	x.WriteJson(writer, x.Mask)
+	x.WriteJson(writer)
 	return writer.BuildBytes()
 }
