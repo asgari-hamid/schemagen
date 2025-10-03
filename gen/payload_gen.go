@@ -8,6 +8,7 @@ import (
 
 func GeneratePayloadStruct(f *jen.File, p *code.Payload) {
 	f.Type().Id(p.Name).StructFunc(func(g *jen.Group) {
+		g.Id("Mask").Index().Bool()
 		for _, field := range p.Fields {
 			s := g.Id(field.StructName)
 			switch field.Type {
@@ -101,5 +102,18 @@ func GeneratePayloadJsonWriter(f *jen.File, p *code.Payload) {
 					g.Id("writer").Dot(method).Call(jen.Lit(field.JsonName), jen.Id("x").Dot(field.StructName))
 				})
 			}
+		})
+}
+
+func GeneratePayloadMarshaler(f *jen.File, p *code.Payload) {
+	f.Func().
+		Params(jen.Id("x").Op("*").Id(p.Name)).
+		Id("MarshalJSON").
+		Params().
+		Params(jen.Index().Byte(), jen.Error()).
+		BlockFunc(func(g *jen.Group) {
+			g.Id("writer").Op(":=").Qual("github.com/asgari-hamid/jsonw", "NewObjectWriter").Call(jen.Nil())
+			g.Id("x").Dot("writeJson").Call(jen.Id("writer"), jen.Id("x").Dot("Mask"))
+			g.Return(jen.Id("writer").Dot("BuildBytes").Call())
 		})
 }

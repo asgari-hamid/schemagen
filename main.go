@@ -26,6 +26,7 @@ func main() {
 	gen.GeneratePayloadFieldMask(j, p)
 	gen.GeneratePayloadStruct(j, p)
 	gen.GeneratePayloadJsonWriter(j, p)
+	gen.GeneratePayloadMarshaler(j, p)
 
 	if err := j.Save("./payloads/product_gen.go"); err != nil {
 		panic(err)
